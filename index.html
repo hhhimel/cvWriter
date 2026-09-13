@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Builder — Build your CV in minutes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+<style>
+  :root{
+    --paper:#FAF8F3;
+    --paper-raised:#FFFFFF;
+    --ink:#211F1A;
+    --ink-soft:#5B584F;
+    --line:#DEDACC;
+    --seal:#1C4532;
+    --seal-soft:#E7EEE9;
+    --brass:#A97B3F;
+    --danger:#9A3B2E;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;
+  }
+  a{color:var(--seal);}
+
+  .masthead{
+    border-bottom:1px solid var(--line);
+    padding:28px clamp(16px,5vw,48px) 22px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .masthead .brand{
+    font-family:'Source Serif 4',serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:0.01em;
+  }
+  .masthead .brand span{color:var(--seal);}
+  .masthead .tag{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    letter-spacing:0.03em;
+  }
+
+  .hero{
+    padding:32px clamp(16px,5vw,48px) 6px;
+    max-width:1400px;
+    margin:0 auto;
+  }
+  .hero h1{
+    font-family:'Source Serif 4',serif;
+    font-weight:700;
+    font-size:clamp(26px,3.4vw,34px);
+    margin:0 0 8px;
+    line-height:1.18;
+  }
+  .hero p{
+    color:var(--ink-soft);
+    font-size:14.5px;
+    max-width:70ch;
+    margin:0;
+  }
+
+  .layout-wrap{
+    display:flex;
+    gap:24px;
+    align-items:flex-start;
+    max-width:1400px;
+    margin:0 auto;
+    padding:16px clamp(16px,4vw,48px) 60px;
+  }
+  .form-col{flex:1 1 620px;min-width:0;}
+  .preview-col{flex:1 1 480px;min-width:0;position:sticky;top:16px;align-self:flex-start;}
+  @media (max-width:980px){
+    .layout-wrap{flex-direction:column;padding-bottom:40px;}
+    .preview-col{position:static;width:100%;}
+  }
+
+  .preview-panel{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#fff;
+    overflow:hidden;
+  }
+  .preview-panel-head{
+    display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    padding:12px 16px;border-bottom:1px solid var(--line);background:var(--seal-soft);
+  }
+  .preview-panel-head .ppt{font-family:'Source Serif 4',serif;font-weight:600;font-size:14.5px;color:var(--seal);}
+  .preview-panel-head .pph{font-size:11.5px;color:var(--ink-soft);}
+  #livePreview{
+    max-height:calc(100vh - 100px);
+    overflow:auto;
+    background:#fdfdfc;
+  }
+  @media (max-width:980px){ #livePreview{ max-height:70vh; } }
+
+  form{margin:0;}
+
+  .section{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px clamp(16px,4vw,28px);
+    margin-bottom:18px;
+  }
+  .section-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:4px;
+  }
+  .section-head h2{flex:1;}
+  .section-num{
+    font-family:'Source Serif 4',serif;
+    color:var(--brass);
+    font-size:13px;
+    font-weight:600;
+  }
+  .section h2{
+    font-family:'Source Serif 4',serif;
+    font-size:18px;
+    margin:0;
+    font-weight:600;
+  }
+  .section .hint{
+    color:var(--ink-soft);
+    font-size:12.5px;
+    margin:2px 0 16px;
+  }
+  .heading-field{
+    background:var(--seal-soft);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:10px 12px;
+    margin-bottom:16px;
+  }
+  .heading-field label{color:var(--seal);margin-bottom:4px;}
+
+  .reorder-btns{display:flex;gap:2px;}
+  .move-btn{
+    background:var(--seal-soft);
+    border:1px solid transparent;
+    color:var(--seal);
+    width:26px;height:26px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    font-size:11px;
+    line-height:1;
+  }
+  .move-btn:hover:not(:disabled){border-color:var(--seal);}
+  .move-btn:disabled{opacity:0.3;cursor:default;}
+
+  label{
+    display:block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+    letter-spacing:0.01em;
+  }
+  .field{margin-bottom:14px;}
+  .row{display:grid;gap:14px;}
+  .row.cols-2{grid-template-columns:1fr 1fr;}
+  .row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+  @media (max-width:560px){
+    .row.cols-2,.row.cols-3{grid-template-columns:1fr;}
+  }
+
+  input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number],textarea,select{
+    width:100%;
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    padding:10px 11px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#FDFCF9;
+    color:var(--ink);
+  }
+  input:focus,textarea:focus,select:focus{
+    outline:2px solid var(--seal);
+    outline-offset:1px;
+    border-color:var(--seal);
+  }
+  textarea{resize:vertical;min-height:64px;}
+  input[type=color]{width:56px;height:38px;padding:3px;cursor:pointer;}
+
+  .entry{
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+    padding:16px 16px 6px;
+    margin-bottom:12px;
+    position:relative;
+    background:#FDFCF9;
+  }
+  .entry-remove{
+    position:absolute;
+    top:8px;
+    right:8px;
+    background:none;
+    border:none;
+    color:var(--danger);
+    font-size:12px;
+    cursor:pointer;
+    font-weight:600;
+    padding:4px 6px;
+  }
+  .entry-remove:hover{text-decoration:underline;}
+
+  .add-btn{
+    background:var(--seal-soft);
+    color:var(--seal);
+    border:1px solid transparent;
+    font-weight:600;
+    font-size:13px;
+    padding:9px 14px;
+    border-radius:var(--radius);
+    cursor:pointer;
+  }
+  .add-btn:hover{border-color:var(--seal);}
+  .add-btn:disabled{opacity:0.45;cursor:default;}
+
+  .photo-row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;}
+  .photo-preview{
+    width:76px;height:96px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#FDFCF9 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23C8C3B4" stroke-width="1.4"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.2-4 4-6 7-6s5.8 2 7 6"/></svg>') center/38px no-repeat;
+    background-size:34px;
+    flex-shrink:0;
+    object-fit:cover;
+  }
+  .sig-preview{
+    width:140px;height:60px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#FDFCF9;
+    flex-shrink:0;
+    object-fit:contain;
+  }
+  input[type=file]{font-size:13px;}
+  .file-note{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  .resize-panel{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;}
+  .resize-status{font-size:12px;color:var(--seal);font-weight:600;}
+  .resize-status.processing{color:var(--ink-soft);font-weight:500;}
+  .size-inline{display:flex;gap:6px;}
+  .size-inline select{width:80px;flex-shrink:0;}
+
+  .suggest-box{margin-top:12px;}
+  .suggestion-card{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    margin-bottom:8px;
+    background:#FDFCF9;
+  }
+  .suggestion-card p{margin:0 0 8px;font-size:13.5px;color:var(--ink);}
+
+  .submit-bar{
+    margin:8px 0 0;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .generate-btn{
+    background:var(--seal);
+    color:#fff;
+    border:none;
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    font-size:16px;
+    padding:14px 26px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    letter-spacing:0.01em;
+  }
+  .generate-btn:hover{background:#153726;}
+  .generate-btn:disabled{background:#9C9A90;cursor:wait;}
+  .secondary-btn{
+    background:#fff;
+    color:var(--seal);
+    border:1.5px solid var(--seal);
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    font-size:16px;
+    padding:12.5px 24px;
+    border-radius:var(--radius);
+    cursor:pointer;
+  }
+  .secondary-btn:hover{background:var(--seal-soft);}
+  .status{font-size:13px;color:var(--ink-soft);width:100%;}
+  .status.err{color:var(--danger);}
+  .status.ok{color:var(--seal);}
+
+  .footnote{
+    margin:16px 0 0;
+    color:var(--ink-soft);
+    font-size:12.5px;
+  }
+
+  .site-footer{
+    border-top:1px solid var(--line);
+    padding:18px clamp(16px,5vw,48px) 26px;
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .checkbox-row input{width:auto;}
+  .checkbox-row label{margin:0;font-weight:500;color:var(--ink);}
+
+  .radio-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  @media (max-width:760px){.radio-cards{grid-template-columns:1fr;}}
+  .radio-card{
+    border:1.5px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    cursor:pointer;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    background:#FDFCF9;
+  }
+  .radio-card input{margin-top:3px;width:auto;flex-shrink:0;}
+  .radio-card .rc-title{font-weight:600;font-size:13.5px;color:var(--ink);}
+  .radio-card .rc-desc{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .radio-card:has(input:checked){border-color:var(--seal);background:var(--seal-soft);}
+
+  .fmt-grid{display:grid;grid-template-columns:1.2fr 0.8fr 1fr;gap:14px;margin-top:14px;}
+  @media (max-width:560px){.fmt-grid{grid-template-columns:1fr;}}
+
+  @media print{
+    body *{visibility:hidden;}
+    .preview-panel, .preview-panel *{visibility:visible;}
+    .preview-panel{
+      position:absolute; top:0; left:0; width:100%;
+      border:none; box-shadow:none;
+    }
+    .preview-panel-head{display:none;}
+    #livePreview{max-height:none;overflow:visible;}
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="brand">CV<span>Builder</span></div>
+  <div class="tag">Fill what you have · watch it build live · download a formatted Word CV</div>
+</div>
+
+<div class="hero">
+  <h1>Build your CV, no field required</h1>
+  <p>Fill in whatever you have on the left — the preview on the right updates as you type. Pick a template, rename any heading, reorder sections with ▲▼, then generate a Word file or print straight to PDF.</p>
+</div>
+
+<div class="layout-wrap">
+<div class="form-col">
+<form id="cvForm">
+
+  <!-- Formatting -->
+  <div class="section">
+    <div class="section-head"><span class="section-num">00</span><h2>Template</h2></div>
+    <p class="hint">Every template below is single-column and ATS-friendly. Picking one sets a sensible section order, heading wording, and accent colour to start from — all three stay fully editable afterward.</p>
+
+    <div class="radio-cards">
+      <label class="radio-card">
+        <input type="radio" name="template" value="fresher" checked>
+        <span>
+          <span class="rc-title">Fresher</span>
+          <span class="rc-desc">Education and skills first. Good for students and recent graduates.</span>
+        </span>
+      </label>
+      <label class="radio-card">
+        <input type="radio" name="template" value="professional">
+        <span>
+          <span class="rc-title">Professional</span>
+          <span class="rc-desc">Experience-first order for working professionals.</span>
+        </span>
+      </label>
+      <label class="radio-card">
+        <input type="radio" name="template" value="europass">
+        <span>
+          <span class="rc-title">Europass-style</span>
+          <span class="rc-desc">Europass-inspired section names and order, EU blue accent.</span>
+        </span>
+      </label>
+    </div>
+    <p class="hint" style="margin-top:10px;">The Europass-style option is an original layout inspired by the Europass CV's conventions — it isn't the official Europass template or generator, and this site isn't affiliated with Europass or the European Union.</p>
+
+    <div class="fmt-grid">
+      <div class="field">
+        <label for="fontFamily">Font</label>
+        <select id="fontFamily">
+          <option value="Calibri">Calibri (ATS-safe)</option>
+          <option value="Arial">Arial (ATS-safe)</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="textSize">Text size</label>
+        <select id="textSize">
+          <option value="compact">Compact</option>
+          <option value="standard" selected>Standard</option>
+          <option value="comfortable">Comfortable</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="accentColor">Accent colour</label>
+        <input type="color" id="accentColor" value="#1c4532">
+      </div>
+    </div>
+  </div>
+
+  <!-- Personal details (fixed at top, not reorderable) -->
+  <div class="section">
+    <div class="section-head"><span class="section-num">01</span><h2>Personal Details</h2></div>
+    <p class="hint">Your name, photo, and contact information at the top of the CV.</p>
+
+    <div class="photo-row field">
+      <img id="photoPreview" class="photo-preview" alt="">
+      <div style="flex:1;min-width:220px;">
+        <label for="photo">Photo (optional)</label>
+        <input type="file" id="photo" accept="image/png,image/jpeg">
+        <div class="file-note">Photos are decorative — ATS scanners ignore them; some international employers prefer none.</div>
+
+        <div class="resize-panel">
+          <div class="row cols-3">
+            <div class="field"><label for="photoFormat">Format</label>
+              <select id="photoFormat"><option value="jpeg">JPG / JPEG</option><option value="png">PNG</option></select>
+            </div>
+            <div class="field"><label for="photoPreset">Size</label>
+              <select id="photoPreset">
+                <option value="">Original size</option>
+                <option value="us2x2">US Passport/Visa — 2×2 in</option>
+                <option value="intl35x45">International / EU / UK / Bangladesh — 35×45 mm</option>
+                <option value="custom">Custom size</option>
+              </select>
+            </div>
+            <div class="field"><label for="photoSizeValue">Max file size</label>
+              <div class="size-inline">
+                <input type="text" id="photoSizeValue" placeholder="e.g. 100">
+                <select id="photoSizeUnit"><option value="KB">KB</option><option value="MB">MB</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="row cols-3" id="photoCustomDims" style="display:none;">
+            <div class="field"><label for="photoCustomW">Width</label><input type="text" id="photoCustomW" placeholder="e.g. 3"></div>
+            <div class="field"><label for="photoCustomH">Height (optional)</label><input type="text" id="photoCustomH" placeholder="e.g. 4"></div>
+            <div class="field"><label for="photoCustomUnit">Unit</label>
+              <select id="photoCustomUnit"><option value="px">px</option><option value="cm">cm</option><option value="mm">mm</option><option value="in">in</option></select>
+            </div>
+          </div>
+          <div class="row cols-3" id="photoDpiRow" style="display:none;">
+            <div class="field"><label for="photoDpi">DPI (print resolution)</label><input type="text" id="photoDpi" value="300"></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+            <span class="resize-status" id="photoResizeStatus"></span>
+            <button type="button" class="add-btn" id="photoDownloadBtn" disabled>⬇ Download resized image</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="fullName">Full Name</label>
+      <input type="text" id="fullName" placeholder="e.g. Sohel Ahammad">
+    </div>
+    <div class="field">
+      <label for="address">Address</label>
+      <input type="text" id="address" placeholder="House, Road, Area, City — Postcode, Country">
+    </div>
+    <div class="row cols-2">
+      <div class="field">
+        <label for="mobile">Mobile</label>
+        <input type="tel" id="mobile" placeholder="+880 1XXX XXXXXX">
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="name@email.com">
+      </div>
+    </div>
+  </div>
+
+  <!-- Reorderable content sections -->
+  <div id="sectionsContainer">
+
+    <div class="section" data-key="objective">
+      <div class="section-head">
+        <span class="section-num">02</span><h2>Career Objective</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_objective">Heading shown on your CV</label>
+        <input type="text" id="heading_objective" value="Career Objective">
+      </div>
+      <p class="hint">A short statement of what you're looking for — call it "Profile", "Summary", anything you like above. Use "Suggest wording" if you'd like help phrasing the content.</p>
+      <div class="field">
+        <textarea id="objective" rows="3" placeholder="Looking forward to contribute to..."></textarea>
+      </div>
+      <div class="row cols-2">
+        <div class="field"><label for="targetRole">Target role (optional)</label><input type="text" id="targetRole" placeholder="e.g. Research Assistant"></div>
+        <div class="field"><label for="shortBio">Short bio / key points (optional)</label><input type="text" id="shortBio" placeholder="e.g. Hardworking fresh graduate, strong in data analysis"></div>
+      </div>
+      <button type="button" class="add-btn" id="suggestObjBtn">💡 Suggest wording</button>
+      <div class="suggest-box" id="objSuggestions" style="display:none;"></div>
+    </div>
+
+    <div class="section" data-key="education">
+      <div class="section-head">
+        <span class="section-num">03</span><h2>Education</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_education">Heading shown on your CV</label>
+        <input type="text" id="heading_education" value="Education">
+      </div>
+      <p class="hint">Add each degree or exam, most recent first.</p>
+      <div id="educationList"></div>
+      <button type="button" class="add-btn" data-add="education">+ Add education</button>
+    </div>
+
+    <div class="section" data-key="training">
+      <div class="section-head">
+        <span class="section-num">04</span><h2>Training &amp; Workshops</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_training">Heading shown on your CV</label>
+        <input type="text" id="heading_training" value="Training and Workshop">
+      </div>
+      <p class="hint">Short courses, workshops, or certifications.</p>
+      <div id="trainingList"></div>
+      <button type="button" class="add-btn" data-add="training">+ Add training</button>
+    </div>
+
+    <div class="section" data-key="skills">
+      <div class="section-head">
+        <span class="section-num">05</span><h2>Special Skills</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_skills">Heading shown on your CV</label>
+        <input type="text" id="heading_skills" value="Special Skills">
+      </div>
+      <p class="hint">One skill per entry.</p>
+      <div id="skillsList"></div>
+      <button type="button" class="add-btn" data-add="skills">+ Add skill</button>
+    </div>
+
+    <div class="section" data-key="experience">
+      <div class="section-head">
+        <span class="section-num">06</span><h2>Work Experience</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_experience">Heading shown on your CV</label>
+        <input type="text" id="heading_experience" value="Work Experience">
+      </div>
+      <p class="hint">Internships and jobs, most recent first.</p>
+      <div id="experienceList"></div>
+      <button type="button" class="add-btn" data-add="experience">+ Add experience</button>
+    </div>
+
+    <div class="section" data-key="languages">
+      <div class="section-head">
+        <span class="section-num">07</span><h2>Language Skills</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_languages">Heading shown on your CV</label>
+        <input type="text" id="heading_languages" value="Language Skills">
+      </div>
+      <div id="languageList"></div>
+      <button type="button" class="add-btn" data-add="language">+ Add language</button>
+    </div>
+
+    <div class="section" data-key="itSkills">
+      <div class="section-head">
+        <span class="section-num">08</span><h2>IT / Technical Skills</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_itSkills">Heading shown on your CV</label>
+        <input type="text" id="heading_itSkills" value="IT / Technical Skills">
+      </div>
+      <p class="hint">One line per skill or tool.</p>
+      <div class="field">
+        <textarea id="itSkills" rows="3" placeholder="Microsoft Word, Excel, PowerPoint&#10;Basic data analysis"></textarea>
+      </div>
+    </div>
+
+    <div class="section" data-key="activities">
+      <div class="section-head">
+        <span class="section-num">09</span><h2>Extra-Curricular Activities</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_activities">Heading shown on your CV</label>
+        <input type="text" id="heading_activities" value="Extra-Curricular Activities">
+      </div>
+      <div id="activityList"></div>
+      <button type="button" class="add-btn" data-add="activity">+ Add activity</button>
+    </div>
+
+    <div class="section" data-key="custom">
+      <div class="section-head">
+        <span class="section-num">10</span><h2>Custom Sections</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <p class="hint">Add any section your sample doesn't cover — Publications, Certifications, Projects, Awards, anything. Each one's heading is the title you give it below.</p>
+      <div id="customList"></div>
+      <button type="button" class="add-btn" data-add="custom">+ Add custom section</button>
+    </div>
+
+    <div class="section" data-key="personalInfo">
+      <div class="section-head">
+        <span class="section-num">11</span><h2>Personal Info</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_personalInfo">Heading shown on your CV</label>
+        <input type="text" id="heading_personalInfo" value="Personal Info">
+      </div>
+      <div class="row cols-3">
+        <div class="field">
+          <label for="dob">Date of Birth</label>
+          <input type="date" id="dob">
+        </div>
+        <div class="field">
+          <label for="nationality">Nationality</label>
+          <input type="text" id="nationality" placeholder="Bangladeshi">
+        </div>
+        <div class="field">
+          <label for="marital">Marital Status</label>
+          <input type="text" id="marital" placeholder="Single">
+        </div>
+      </div>
+      <p class="hint">Add anything else — Blood Group, Religion, NID, Father's/Mother's Name, etc. Each entry can be removed individually.</p>
+      <div id="extraInfoList"></div>
+      <button type="button" class="add-btn" data-add="extraInfo">+ Add more information</button>
+    </div>
+
+    <div class="section" data-key="references">
+      <div class="section-head">
+        <span class="section-num">12</span><h2>References</h2>
+        <div class="reorder-btns"><button type="button" class="move-btn" data-move="up">▲</button><button type="button" class="move-btn" data-move="down">▼</button></div>
+      </div>
+      <div class="heading-field">
+        <label for="heading_references">Heading shown on your CV</label>
+        <input type="text" id="heading_references" value="References">
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="refUponRequest">
+        <label for="refUponRequest">Just show "References available upon request" instead of listing anyone</label>
+      </div>
+      <div id="referenceWrap">
+        <p class="hint">Usually two people who can vouch for you.</p>
+        <div id="referenceList"></div>
+        <button type="button" class="add-btn" data-add="reference">+ Add reference</button>
+      </div>
+    </div>
+
+  </div><!-- /sectionsContainer -->
+
+  <!-- Signature (fixed at bottom, not reorderable) -->
+  <div class="section">
+    <div class="section-head"><span class="section-num">13</span><h2>Signature</h2></div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="includeSignature" checked>
+      <label for="includeSignature">Add a signature line at the bottom of the CV</label>
+    </div>
+    <div id="signatureWrap">
+      <div class="photo-row field">
+        <img id="sigPreview" class="sig-preview" alt="">
+        <div style="flex:1;min-width:220px;">
+          <label for="signature">Signature image (optional)</label>
+          <input type="file" id="signature" accept="image/png,image/jpeg">
+          <div class="file-note">A photo or scan of your signature, or leave blank to just print "(Your Name)". PNG keeps a transparent background.</div>
+
+          <div class="resize-panel">
+            <div class="row cols-3">
+              <div class="field"><label for="sigFormat">Format</label>
+                <select id="sigFormat"><option value="png">PNG</option><option value="jpeg">JPG / JPEG</option></select>
+              </div>
+              <div class="field"><label for="sigPreset">Size</label>
+                <select id="sigPreset">
+                  <option value="">Original size</option>
+                  <option value="custom">Custom size</option>
+                </select>
+              </div>
+              <div class="field"><label for="sigSizeValue">Max file size</label>
+                <div class="size-inline">
+                  <input type="text" id="sigSizeValue" placeholder="e.g. 60">
+                  <select id="sigSizeUnit"><option value="KB">KB</option><option value="MB">MB</option></select>
+                </div>
+              </div>
+            </div>
+            <div class="row cols-3" id="sigCustomDims" style="display:none;">
+              <div class="field"><label for="sigCustomW">Width</label><input type="text" id="sigCustomW" placeholder="e.g. 6"></div>
+              <div class="field"><label for="sigCustomH">Height (optional)</label><input type="text" id="sigCustomH" placeholder="leave blank to keep proportion"></div>
+              <div class="field"><label for="sigCustomUnit">Unit</label>
+                <select id="sigCustomUnit"><option value="px">px</option><option value="cm">cm</option><option value="mm">mm</option><option value="in">in</option></select>
+              </div>
+            </div>
+            <div class="row cols-3" id="sigDpiRow" style="display:none;">
+              <div class="field"><label for="sigDpi">DPI (print resolution)</label><input type="text" id="sigDpi" value="300"></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+              <span class="resize-status" id="sigResizeStatus"></span>
+              <button type="button" class="add-btn" id="sigDownloadBtn" disabled>⬇ Download resized image</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="submit-bar">
+    <button type="submit" class="generate-btn" id="generateBtn">Generate CV (.docx)</button>
+    <button type="button" class="secondary-btn" id="printBtn">Print / Save as PDF</button>
+    <span class="status" id="status"></span>
+  </div>
+</form>
+
+<p class="footnote">Everything happens in your browser — nothing you type or upload is sent anywhere. Leave any field blank; blank fields and empty sections are left out of the generated document automatically.</p>
+</div><!-- /form-col -->
+
+<div class="preview-col">
+  <div class="preview-panel">
+    <div class="preview-panel-head">
+      <span class="ppt">Live Preview</span>
+      <span class="pph">Updates as you type</span>
+    </div>
+    <div id="livePreview"></div>
+  </div>
+</div>
+</div><!-- /layout-wrap -->
+
+<footer class="site-footer">
+  © <span id="copyYear"></span> Himel Rahman — CV Builder. All rights reserved.
+  <br>Not affiliated with Europass or the European Union.
+</footer>
+
+<script>
+/* ==================== state that early-running code depends on ====================
+   IMPORTANT: this must come before anything that can call schedulePreviewUpdate()
+   synchronously during initial setup (e.g. the entry-seeding loop below) — a
+   `let` declared later is in the temporal dead zone until its own statement
+   runs, and referencing it earlier throws, silently killing every line of
+   script that follows. That exact bug previously broke live preview and
+   template switching; previewTimer now lives at the very top to prevent it. */
+let previewTimer = null;
+
+/* ==================== small utils ==================== */
+function esc(s){
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function joinList(arr){
+  if(arr.length===0) return '';
+  if(arr.length===1) return arr[0];
+  if(arr.length===2) return arr[0] + ' and ' + arr[1];
+  return arr.slice(0,-1).join(', ') + ', and ' + arr[arr.length-1];
+}
+function articleFor(text){
+  const t = (text || '').trim();
+  const vowelSoundAcronyms = ['MS','MA','MBA','MSC','LLB','LLM','SSC','HSC','MPHIL'];
+  const firstWord = t.split(/\s+/)[0] || '';
+  if(vowelSoundAcronyms.includes(firstWord.toUpperCase())) return 'an';
+  return /^[aeiou]/i.test(t) ? 'an' : 'a';
+}
+function formatDate(iso){
+  if(!iso) return iso;
+  const d = new Date(iso + 'T00:00:00');
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+function slugFileName(name){
+  const base = (name || 'CV').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g,'');
+  return (base || 'CV') + '.docx';
+}
+function fmtBytes(bytes){
+  return bytes >= 1024*1024 ? (bytes/1024/1024).toFixed(2) + ' MB' : Math.round(bytes/1024) + ' KB';
+}
+function val(id){ return document.getElementById(id).value.trim(); }
+
+document.getElementById('copyYear').textContent = new Date().getFullYear();
+
+/* ==================== templates: default order / headings / colour ==================== */
+const HEADING_KEYS = ['objective','education','training','skills','experience','languages','itSkills','activities','personalInfo','references'];
+
+const TEMPLATES = {
+  fresher: {
+    order: ['objective','education','skills','training','experience','activities','languages','itSkills','custom','personalInfo','references'],
+    headings: {
+      objective:'Career Objective', education:'Education', training:'Training and Workshop',
+      skills:'Special Skills', experience:'Work Experience', languages:'Language Skills',
+      itSkills:'IT / Technical Skills', activities:'Extra-Curricular Activities',
+      personalInfo:'Personal Info', references:'References'
+    },
+    color: '#1c4532'
+  },
+  professional: {
+    order: ['objective','experience','skills','education','training','languages','itSkills','activities','custom','personalInfo','references'],
+    headings: {
+      objective:'Professional Summary', education:'Education', training:'Certifications and Training',
+      skills:'Core Skills', experience:'Professional Experience', languages:'Languages',
+      itSkills:'Technical Skills', activities:'Additional Activities',
+      personalInfo:'Personal Info', references:'References'
+    },
+    color: '#1F3A5F'
+  },
+  europass: {
+    order: ['objective','personalInfo','experience','education','training','skills','languages','itSkills','activities','custom','references'],
+    headings: {
+      objective:'Personal Statement', education:'Education And Training', training:'Training And Workshop',
+      skills:'Personal Skills', experience:'Work Experience', languages:'Language Skills',
+      itSkills:'Digital Skills', activities:'Additional Information',
+      personalInfo:'Personal Information', references:'References'
+    },
+    color: '#003399'
+  }
+};
+
+/* ==================== repeatable entry templates ==================== */
+const templates = {
+  education: () => `
+    <div class="row cols-2">
+      <div class="field"><label>Degree / Exam</label><input type="text" data-k="degree" placeholder="e.g. BSc in Agriculture"></div>
+      <div class="field"><label>Institution</label><input type="text" data-k="institution" placeholder="e.g. Sher-e-Bangla Agricultural University"></div>
+    </div>
+    <div class="row cols-2">
+      <div class="field"><label>Result</label><input type="text" data-k="result" placeholder="e.g. CGPA 3.60 out of 4"></div>
+      <div class="field"><label>Year</label><input type="text" data-k="year" placeholder="e.g. 2023"></div>
+    </div>`,
+  training: () => `
+    <div class="field"><label>Training / Workshop</label><textarea rows="2" data-k="text" placeholder="e.g. Data analysis workshop organized by..."></textarea></div>`,
+  skills: () => `
+    <div class="field"><label>Skill</label><input type="text" data-k="text" placeholder="e.g. Team work"></div>`,
+  experience: () => `
+    <div class="row cols-2">
+      <div class="field"><label>Position</label><input type="text" data-k="position" placeholder="e.g. Research Intern"></div>
+      <div class="field"><label>Duration</label><input type="text" data-k="duration" placeholder="e.g. Jan 2024 – Jun 2024"></div>
+    </div>
+    <div class="row cols-2">
+      <div class="field"><label>Company / Organization</label><input type="text" data-k="company" placeholder="e.g. Sonali Bank PLC"></div>
+      <div class="field"><label>Location</label><input type="text" data-k="location" placeholder="e.g. Dhaka"></div>
+    </div>
+    <div class="field"><label>Responsibilities</label><textarea rows="3" data-k="description" placeholder="One point per line"></textarea></div>`,
+  language: () => `
+    <div class="row cols-2">
+      <div class="field"><label>Language</label><input type="text" data-k="language" placeholder="e.g. English"></div>
+      <div class="field"><label>Proficiency</label><input type="text" data-k="proficiency" placeholder="e.g. Good working proficiency"></div>
+    </div>`,
+  activity: () => `
+    <div class="field"><label>Activity</label><textarea rows="2" data-k="text" placeholder="e.g. Volunteer at..."></textarea></div>`,
+  reference: () => `
+    <div class="row cols-2">
+      <div class="field"><label>Name</label><input type="text" data-k="name" placeholder="e.g. Dr. Nahid Zeba"></div>
+      <div class="field"><label>Designation</label><input type="text" data-k="designation" placeholder="e.g. Associate Professor"></div>
+    </div>
+    <div class="row cols-2">
+      <div class="field"><label>Organization</label><input type="text" data-k="organization" placeholder="e.g. Sher-e-Bangla Agricultural University"></div>
+      <div class="field"><label>Address</label><input type="text" data-k="address" placeholder="e.g. Dhaka-1207"></div>
+    </div>
+    <div class="row cols-2">
+      <div class="field"><label>Phone</label><input type="text" data-k="phone" placeholder="+880 1XXX XXXXXX"></div>
+      <div class="field"><label>Email</label><input type="text" data-k="email" placeholder="name@email.com"></div>
+    </div>`,
+  custom: () => `
+    <div class="row cols-2">
+      <div class="field"><label>Section title</label><input type="text" data-k="title" placeholder="e.g. Publications"></div>
+      <div class="field"><label>Format</label>
+        <select data-k="format">
+          <option value="bullet">Bulleted list (one point per line)</option>
+          <option value="paragraph">Paragraph</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Content</label><textarea rows="3" data-k="content" placeholder="One point per line, or a short paragraph"></textarea></div>`,
+  extraInfo: () => `
+    <div class="row cols-2">
+      <div class="field"><label>Label</label><input type="text" data-k="label" placeholder="e.g. Blood Group"></div>
+      <div class="field"><label>Value</label><input type="text" data-k="value" placeholder="e.g. O+"></div>
+    </div>`
+};
+
+function addEntry(kind){
+  const list = document.getElementById(kind + 'List');
+  const wrap = document.createElement('div');
+  wrap.className = 'entry';
+  wrap.dataset.kind = kind;
+  wrap.innerHTML = `<button type="button" class="entry-remove" aria-label="Remove">Remove ✕</button>` + templates[kind]();
+  wrap.querySelector('.entry-remove').addEventListener('click', () => { wrap.remove(); schedulePreviewUpdate(); });
+  list.appendChild(wrap);
+  schedulePreviewUpdate();
+}
+document.querySelectorAll('[data-add]').forEach(btn=>{
+  btn.addEventListener('click', ()=> addEntry(btn.dataset.add));
+});
+['education','training','skills','experience','language','activity','reference'].forEach(k=> addEntry(k));
+if(document.querySelectorAll('#referenceList .entry').length < 2) addEntry('reference');
+
+/* ==================== section reordering ==================== */
+const sectionsContainer = document.getElementById('sectionsContainer');
+
+function renumberSections(){
+  Array.from(sectionsContainer.children).forEach((el, i)=>{
+    const numEl = el.querySelector('.section-num');
+    if(numEl) numEl.textContent = String(i + 2).padStart(2, '0');
+  });
+}
+function updateMoveButtonsState(){
+  const kids = Array.from(sectionsContainer.children);
+  kids.forEach((el, i)=>{
+    const up = el.querySelector('[data-move="up"]');
+    const down = el.querySelector('[data-move="down"]');
+    if(up) up.disabled = (i === 0);
+    if(down) down.disabled = (i === kids.length - 1);
+  });
+}
+function moveSection(sectionEl, dir){
+  if(dir === 'up'){
+    const prev = sectionEl.previousElementSibling;
+    if(prev) sectionsContainer.insertBefore(sectionEl, prev);
+  } else {
+    const next = sectionEl.nextElementSibling;
+    if(next) sectionsContainer.insertBefore(next, sectionEl);
+  }
+  renumberSections();
+  updateMoveButtonsState();
+  schedulePreviewUpdate();
+}
+sectionsContainer.querySelectorAll('.move-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> moveSection(btn.closest('.section'), btn.dataset.move));
+});
+updateMoveButtonsState();
+
+function getSectionOrder(){
+  return Array.from(sectionsContainer.children).map(el => el.dataset.key);
+}
+function applyTemplateOrder(order){
+  order.forEach(key=>{
+    const el = sectionsContainer.querySelector(`[data-key="${key}"]`);
+    if(el) sectionsContainer.appendChild(el);
+  });
+  renumberSections();
+  updateMoveButtonsState();
+}
+function applyHeadings(headingsMap){
+  HEADING_KEYS.forEach(k=>{
+    const input = document.getElementById('heading_' + k);
+    if(input && headingsMap[k] !== undefined) input.value = headingsMap[k];
+  });
+}
+function applyTemplate(key){
+  const cfg = TEMPLATES[key];
+  if(!cfg) return;
+  applyTemplateOrder(cfg.order);
+  applyHeadings(cfg.headings);
+  document.getElementById('accentColor').value = cfg.color;
+  schedulePreviewUpdate();
+}
+document.querySelectorAll('input[name="template"]').forEach(r=>{
+  r.addEventListener('change', ()=>{ if(r.checked) applyTemplate(r.value); });
+});
+
+/* ==================== references / signature toggles ==================== */
+const refCheckbox = document.getElementById('refUponRequest');
+const refWrap = document.getElementById('referenceWrap');
+refCheckbox.addEventListener('change', ()=>{ refWrap.style.display = refCheckbox.checked ? 'none' : ''; schedulePreviewUpdate(); });
+
+const sigCheckbox = document.getElementById('includeSignature');
+const sigWrap = document.getElementById('signatureWrap');
+sigCheckbox.addEventListener('change', ()=>{ sigWrap.style.display = sigCheckbox.checked ? '' : 'none'; schedulePreviewUpdate(); });
+
+/* ==================== image resize / compress ==================== */
+function loadImage(dataUrl){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=> resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+function canvasToBlob(canvas, mime, quality){
+  return new Promise(resolve => canvas.toBlob(resolve, mime, quality));
+}
+function blobToDataUrl(blob){
+  return new Promise(resolve=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+function computeContainSize(sw, sh, maxW, maxH){
+  let scale = 1;
+  if(maxW) scale = Math.min(scale, maxW / sw);
+  if(maxH) scale = Math.min(scale, maxH / sh);
+  scale = Math.min(scale, 1); // never upscale
+  return { w: Math.max(1, Math.round(sw * scale)), h: Math.max(1, Math.round(sh * scale)) };
+}
+function toPixels(value, unit, dpi){
+  const v = parseFloat(value);
+  if(!v || v <= 0) return undefined;
+  switch(unit){
+    case 'px': return Math.round(v);
+    case 'in': return Math.round(v * dpi);
+    case 'cm': return Math.round((v / 2.54) * dpi);
+    case 'mm': return Math.round((v / 25.4) * dpi);
+    default: return Math.round(v);
+  }
+}
+async function processImage(originalDataUrl, { maxW, maxH, targetBytes, format } = {}){
+  const fmt = format === 'png' ? 'png' : 'jpeg';
+  const mime = fmt === 'png' ? 'image/png' : 'image/jpeg';
+  const img = await loadImage(originalDataUrl);
+  let { w, h } = computeContainSize(img.width, img.height, maxW, maxH);
+  let quality = 0.92;
+  let blob = null;
+  for(let attempt = 0; attempt < 14; attempt++){
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if(fmt === 'jpeg'){ ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h); }
+    ctx.drawImage(img, 0, 0, w, h);
+    blob = await canvasToBlob(canvas, mime, fmt === 'jpeg' ? quality : undefined);
+    if(!targetBytes || blob.size <= targetBytes || (w <= 60 || h <= 60)) break;
+    if(fmt === 'jpeg' && quality > 0.42){ quality -= 0.1; }
+    else { w = Math.max(60, Math.round(w * 0.85)); h = Math.max(60, Math.round(h * 0.85)); if(fmt==='jpeg') quality = 0.8; }
+  }
+  const dataUrl = await blobToDataUrl(blob);
+  return { dataUrl, blob, width: w, height: h, bytes: blob.size, format: fmt };
+}
+
+const PHOTO_PRESETS = {
+  us2x2:      { unit:'in', w:2,  h:2  },
+  intl35x45:  { unit:'mm', w:35, h:45 }
+};
+
+function wireImageControl({ prefix, fileInputId, previewId, onResult }){
+  let originalDataUrl = null;
+  let currentResult = null;
+
+  const fileInput   = document.getElementById(fileInputId);
+  const preview     = document.getElementById(previewId);
+  const formatSel   = document.getElementById(prefix + 'Format');
+  const presetSel   = document.getElementById(prefix + 'Preset');
+  const customDims  = document.getElementById(prefix + 'CustomDims');
+  const customW     = document.getElementById(prefix + 'CustomW');
+  const customH     = document.getElementById(prefix + 'CustomH');
+  const customUnit  = document.getElementById(prefix + 'CustomUnit');
+  const dpiRow      = document.getElementById(prefix + 'DpiRow');
+  const dpiInput    = document.getElementById(prefix + 'Dpi');
+  const sizeValue   = document.getElementById(prefix + 'SizeValue');
+  const sizeUnit    = document.getElementById(prefix + 'SizeUnit');
+  const status      = document.getElementById(prefix + 'ResizeStatus');
+  const downloadBtn = document.getElementById(prefix + 'DownloadBtn');
+
+  function updateVisibility(){
+    const isCustom = presetSel.value === 'custom';
+    customDims.style.display = isCustom ? '' : 'none';
+    dpiRow.style.display = (isCustom && customUnit.value !== 'px') ? '' : 'none';
+  }
+  function computeMaxDims(){
+    const value = presetSel.value;
+    if(value === '') return {};
+    if(value === 'custom'){
+      const dpi = parseFloat(dpiInput.value) || 300;
+      return { maxW: toPixels(customW.value, customUnit.value, dpi), maxH: toPixels(customH.value, customUnit.value, dpi) };
+    }
+    const preset = PHOTO_PRESETS[value];
+    if(!preset) return {};
+    return { maxW: toPixels(preset.w, preset.unit, 300), maxH: preset.h ? toPixels(preset.h, preset.unit, 300) : undefined };
+  }
+  function computeTargetBytes(){
+    const v = parseFloat(sizeValue.value);
+    if(!v || v <= 0) return null;
+    return Math.round(v * (sizeUnit.value === 'MB' ? 1024*1024 : 1024));
+  }
+
+  async function reprocess(){
+    if(!originalDataUrl){ downloadBtn.disabled = true; onResult(null); return; }
+    const { maxW, maxH } = computeMaxDims();
+    const targetBytes = computeTargetBytes();
+    const format = formatSel.value;
+    status.textContent = 'Processing…';
+    status.className = 'resize-status processing';
+    try{
+      const result = await processImage(originalDataUrl, { maxW, maxH, targetBytes, format });
+      currentResult = result;
+      preview.src = result.dataUrl;
+      status.textContent = `${result.width}×${result.height} · ${fmtBytes(result.bytes)} · ${format.toUpperCase()}`;
+      status.className = 'resize-status';
+      downloadBtn.disabled = false;
+      onResult(result.dataUrl);
+    }catch(e){
+      status.textContent = 'Could not process image';
+      status.className = 'resize-status';
+      onResult(originalDataUrl);
+    }
+  }
+
+  fileInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file){ originalDataUrl = null; preview.removeAttribute('src'); downloadBtn.disabled = true; onResult(null); status.textContent=''; return; }
+    formatSel.value = file.type.includes('png') ? 'png' : 'jpeg';
+    const reader = new FileReader();
+    reader.onload = ()=>{ originalDataUrl = reader.result; reprocess(); };
+    reader.readAsDataURL(file);
+  });
+  presetSel.addEventListener('change', ()=>{ updateVisibility(); reprocess(); });
+  customUnit.addEventListener('change', ()=>{ updateVisibility(); reprocess(); });
+  [customW, customH, dpiInput, formatSel, sizeValue, sizeUnit].forEach(el=>{
+    el.addEventListener('input', reprocess);
+    el.addEventListener('change', reprocess);
+  });
+  downloadBtn.addEventListener('click', ()=>{
+    if(!currentResult) return;
+    const ext = currentResult.format === 'png' ? 'png' : 'jpg';
+    const a = document.createElement('a');
+    a.href = currentResult.dataUrl;
+    a.download = `${prefix}_${currentResult.width}x${currentResult.height}.${ext}`;
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  updateVisibility();
+}
+
+let photoDataUrl = null;
+wireImageControl({ prefix:'photo', fileInputId:'photo', previewId:'photoPreview', onResult:(url)=>{ photoDataUrl = url; schedulePreviewUpdate(); } });
+let signatureDataUrl = null;
+wireImageControl({ prefix:'sig', fileInputId:'signature', previewId:'sigPreview', onResult:(url)=>{ signatureDataUrl = url; schedulePreviewUpdate(); } });
+
+/* ==================== career objective suggestions ==================== */
+function generateObjectiveSuggestions(data){
+  const firstEdu = data.education[0];
+  const degree = firstEdu ? firstEdu.degree : '';
+  const institution = firstEdu ? firstEdu.institution : '';
+  const degreeFull = [degree, institution].filter(Boolean).join(' from ');
+  const skillsList = data.skills.slice(0,3).map(s=>s.text).filter(Boolean);
+  const bio = (data.shortBio || '').trim();
+  const role = (data.targetRole || '').trim();
+  const suggestions = [];
+
+  if(degreeFull || skillsList.length){
+    let s = 'Motivated';
+    s += degree ? ` graduate with ${articleFor(degree)} ${degreeFull}` : ' professional';
+    if(skillsList.length) s += `${degree ? ' and' : ' with'} a strong foundation in ${joinList(skillsList)}`;
+    s += role ? `, seeking to contribute as a ${role} in a growth-focused organization.` : ', seeking to contribute to a growth-focused organization.';
+    suggestions.push(s);
+  }
+  if(skillsList.length){
+    let s2 = `Detail-oriented individual skilled in ${joinList(skillsList)}, looking to apply these strengths`;
+    s2 += role ? ` in a ${role} role` : ' in a challenging role';
+    s2 += degree ? ` after completing ${articleFor(degree)} ${degreeFull}.` : '.';
+    suggestions.push(s2);
+  }
+  if(bio){
+    let s3 = bio;
+    if(!/[.!?]$/.test(s3)) s3 += '.';
+    s3 += role ? ` Looking forward to bringing these strengths to a ${role} position.` : ' Looking forward to contributing these strengths to a suitable role.';
+    suggestions.push(s3);
+  }
+  if(suggestions.length === 0){
+    suggestions.push('Motivated and detail-oriented individual seeking to contribute skills and knowledge to a growth-focused organization.' + (role ? ` Interested in a ${role} position.` : ''));
+  }
+  return suggestions.slice(0,3);
+}
+
+document.getElementById('suggestObjBtn').addEventListener('click', ()=>{
+  const data = collectData();
+  const suggestions = generateObjectiveSuggestions(data);
+  const box = document.getElementById('objSuggestions');
+  box.innerHTML = suggestions.map((s,i)=>`<div class="suggestion-card"><p>${esc(s)}</p><button type="button" class="add-btn use-suggestion" data-i="${i}">Use this</button></div>`).join('')
+    + `<p class="hint" style="margin-top:8px;">These are wording suggestions built from what you've entered so far — not AI-generated. Feel free to edit after inserting.</p>`;
+  box.dataset.suggestions = JSON.stringify(suggestions);
+  box.style.display = 'block';
+  box.querySelectorAll('.use-suggestion').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const arr = JSON.parse(box.dataset.suggestions);
+      document.getElementById('objective').value = arr[parseInt(btn.dataset.i,10)];
+      schedulePreviewUpdate();
+    });
+  });
+});
+
+/* ==================== collect form data ==================== */
+function collectEntries(kind, keys){
+  const out = [];
+  document.querySelectorAll(`.entry[data-kind="${kind}"]`).forEach(entry=>{
+    const item = {};
+    let hasAny = false;
+    keys.forEach(k=>{
+      const el = entry.querySelector(`[data-k="${k}"]`);
+      const v = el ? el.value.trim() : '';
+      item[k] = v;
+      if(v && k !== 'format') hasAny = true;
+    });
+    if(hasAny) out.push(item);
+  });
+  return out;
+}
+function collectHeadings(){
+  const h = {};
+  HEADING_KEYS.forEach(k=>{ h[k] = val('heading_' + k) || k; });
+  return h;
+}
+
+function collectData(){
+  return {
+    formatting: {
+      fontFamily: document.getElementById('fontFamily').value,
+      textSize: document.getElementById('textSize').value,
+      accentColor: document.getElementById('accentColor').value
+    },
+    headings: collectHeadings(),
+    sectionOrder: getSectionOrder(),
+    photo: photoDataUrl,
+    signature: signatureDataUrl,
+    fullName: val('fullName'),
+    address: val('address'),
+    mobile: val('mobile'),
+    email: val('email'),
+    objective: val('objective'),
+    targetRole: val('targetRole'),
+    shortBio: val('shortBio'),
+    education: collectEntries('education', ['degree','institution','result','year']),
+    training: collectEntries('training', ['text']),
+    skills: collectEntries('skills', ['text']),
+    experience: collectEntries('experience', ['position','duration','company','location','description']),
+    languages: collectEntries('language', ['language','proficiency']),
+    itSkills: val('itSkills'),
+    activities: collectEntries('activity', ['text']),
+    custom: collectEntries('custom', ['title','format','content']),
+    dob: val('dob'),
+    nationality: val('nationality'),
+    marital: val('marital'),
+    extraInfo: collectEntries('extraInfo', ['label','value']),
+    refUponRequest: refCheckbox.checked,
+    references: refCheckbox.checked ? [] : collectEntries('reference', ['name','designation','organization','address','phone','email']),
+    includeSignature: sigCheckbox.checked
+  };
+}
+
+/* ==================== formatting → size maps ==================== */
+const SIZE_MAP = {
+  compact:     { name: 26, heading: 20, body: 18 },
+  standard:    { name: 32, heading: 22, body: 21 },
+  comfortable: { name: 36, heading: 24, body: 23 }
+};
+const PRINT_PX = {
+  compact:     { name: 20, heading: 12.5, body: 11 },
+  standard:    { name: 24, heading: 13.5, body: 12.5 },
+  comfortable: { name: 27, heading: 14.5, body: 13.5 }
+};
+
+/* ==================== DOCX GENERATION ====================
+   docx.* is referenced lazily, inside function bodies, rather than
+   destructured once at the top of the script. If the CDN script is slow,
+   blocked, or fails, this way only "Generate CV (.docx)" is affected
+   (caught below with a clear error) instead of silently breaking every
+   other feature on the page. */
+const NUMBERING_REF = 'bullets';
+let THEME = null;
+
+function heading(text){
+  const { Paragraph, TextRun, BorderStyle } = docx;
+  return new Paragraph({
+    spacing: { before: 220, after: 90 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: THEME.color, space: 2 } },
+    children: [ new TextRun({ text: text.toUpperCase(), bold: true, size: THEME.sizes.heading, color: THEME.color, font: THEME.font }) ]
+  });
+}
+function bullet(text, opts={}){
+  const { Paragraph, TextRun } = docx;
+  return new Paragraph({
+    numbering: { reference: NUMBERING_REF, level: 0 },
+    spacing: { after: 40 },
+    children: [ new TextRun({ text, size: THEME.sizes.body, bold: !!opts.bold, italics: !!opts.italics, font: THEME.font }) ]
+  });
+}
+function plain(text, opts={}){
+  const { Paragraph, TextRun } = docx;
+  return new Paragraph({
+    spacing: { after: opts.after !== undefined ? opts.after : 60 },
+    alignment: opts.align,
+    children: [ new TextRun({ text, size: opts.size || THEME.sizes.body, bold: !!opts.bold, italics: !!opts.italics, font: THEME.font }) ]
+  });
+}
+async function dataUrlToImage(dataUrl, box){
+  const res = await fetch(dataUrl);
+  const buf = await res.arrayBuffer();
+  return new docx.ImageRun({ data: buf, transformation: box, type: dataUrl.includes('image/png') ? 'png' : 'jpg' });
+}
+
+const DOCX_SECTION_RENDERERS = {
+  objective: (data, push) => {
+    if(!data.objective) return;
+    push(heading(data.headings.objective));
+    push(plain(data.objective));
+  },
+  education: (data, push) => {
+    if(!data.education.length) return;
+    push(heading(data.headings.education));
+    data.education.forEach(e=>{
+      const parts = [e.degree, e.institution, e.result, e.year].filter(Boolean);
+      push(bullet(parts.join(', ')));
+    });
+  },
+  training: (data, push) => {
+    if(!data.training.length) return;
+    push(heading(data.headings.training));
+    data.training.forEach(t=> push(bullet(t.text)));
+  },
+  skills: (data, push) => {
+    if(!data.skills.length) return;
+    push(heading(data.headings.skills));
+    data.skills.forEach(s=> push(bullet(s.text)));
+  },
+  experience: (data, push) => {
+    if(!data.experience.length) return;
+    push(heading(data.headings.experience));
+    data.experience.forEach(w=>{
+      const titleLine = [w.position, w.duration].filter(Boolean).join('   —   ');
+      if(titleLine) push(plain(titleLine, { bold:true, after:20 }));
+      const companyLine = [w.company, w.location].filter(Boolean).join(', ');
+      if(companyLine) push(plain(companyLine, { italics:true, after:40 }));
+      if(w.description) w.description.split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=> push(bullet(line)));
+    });
+  },
+  languages: (data, push) => {
+    if(!data.languages.length) return;
+    push(heading(data.headings.languages));
+    data.languages.forEach(l=> push(bullet([l.language, l.proficiency].filter(Boolean).join(' — '))));
+  },
+  itSkills: (data, push) => {
+    if(!data.itSkills) return;
+    push(heading(data.headings.itSkills));
+    data.itSkills.split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=> push(bullet(line)));
+  },
+  activities: (data, push) => {
+    if(!data.activities.length) return;
+    push(heading(data.headings.activities));
+    data.activities.forEach(a=> push(bullet(a.text)));
+  },
+  custom: (data, push) => {
+    data.custom.forEach(c=>{
+      if(!c.title && !c.content) return;
+      push(heading(c.title || 'Additional Information'));
+      if(c.format === 'paragraph'){
+        push(plain(c.content));
+      } else {
+        (c.content || '').split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=> push(bullet(line)));
+      }
+    });
+  },
+  personalInfo: (data, push) => {
+    const hasFixed = data.dob || data.nationality || data.marital;
+    if(!hasFixed && !data.extraInfo.length) return;
+    push(heading(data.headings.personalInfo));
+    if(data.dob) push(plain('Date of Birth: ' + formatDate(data.dob)));
+    if(data.nationality) push(plain('Nationality: ' + data.nationality));
+    if(data.marital) push(plain('Marital Status: ' + data.marital));
+    data.extraInfo.forEach(f=>{
+      if(f.label || f.value) push(plain([f.label, f.value].filter(Boolean).join(': ')));
+    });
+  },
+  references: (data, push) => {
+    if(data.refUponRequest){
+      push(heading(data.headings.references));
+      push(plain('Available upon request.'));
+      return;
+    }
+    if(!data.references.length) return;
+    push(heading(data.headings.references));
+    data.references.forEach((r,i)=>{
+      if(r.name) push(plain(r.name, {bold:true, after:20}));
+      if(r.designation) push(plain(r.designation, {after:20}));
+      if(r.organization) push(plain(r.organization, {after:20}));
+      if(r.address) push(plain(r.address, {after:20}));
+      if(r.phone) push(plain('Phone: ' + r.phone, {after:20}));
+      if(r.email) push(plain('Email: ' + r.email, {after:20}));
+      if(i < data.references.length-1) push(plain(' ', {after:80}));
+    });
+  }
+};
+
+async function buildDocx(data){
+  if(typeof docx === 'undefined'){
+    throw new Error('The Word-generation library failed to load. Please check your internet connection and reload the page.');
+  }
+  THEME = {
+    font: data.formatting.fontFamily,
+    color: data.formatting.accentColor.replace('#','').toUpperCase(),
+    sizes: SIZE_MAP[data.formatting.textSize]
+  };
+  const children = [];
+  const push = (p) => children.push(p);
+
+  if(data.photo){
+    try{
+      const img = await dataUrlToImage(data.photo, { width: 92, height: 118 });
+      push(new docx.Paragraph({ children: [img], spacing:{ after: 120 } }));
+    }catch(e){ /* skip photo if it fails to embed */ }
+  }
+  if(data.fullName) push(plain(data.fullName, { bold:true, size: THEME.sizes.name, after:40 }));
+  if(data.address) push(plain('Address: ' + data.address, { after:30 }));
+  if(data.mobile) push(plain('Mobile: ' + data.mobile, { after:30 }));
+  if(data.email) push(plain('Email: ' + data.email, { after:30 }));
+
+  data.sectionOrder.forEach(key=>{
+    const renderer = DOCX_SECTION_RENDERERS[key];
+    if(renderer) renderer(data, push);
+  });
+
+  if(data.includeSignature && (data.fullName || data.signature)){
+    push(plain(' ', { after: 160 }));
+    if(data.signature){
+      try{
+        const img = await dataUrlToImage(data.signature, { width: 130, height: 55 });
+        push(new docx.Paragraph({ alignment: docx.AlignmentType.RIGHT, children: [img], spacing:{ after: 20 } }));
+      }catch(e){ /* skip if it fails */ }
+    }
+    if(data.fullName) push(plain('(' + data.fullName + ')', { align: docx.AlignmentType.RIGHT }));
+  }
+
+  const doc = new docx.Document({
+    numbering: {
+      config: [{
+        reference: NUMBERING_REF,
+        levels: [{ level: 0, format: docx.LevelFormat.BULLET, text: '•', alignment: docx.AlignmentType.LEFT,
+          style: { paragraph: { indent: { left: docx.convertInchesToTwip(0.28), hanging: docx.convertInchesToTwip(0.18) } } } }]
+      }]
+    },
+    sections: [{
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 900, bottom: 900, left: 1100, right: 1100 } } },
+      children
+    }]
+  });
+
+  return docx.Packer.toBlob(doc);
+}
+
+/* ==================== PRINT / LIVE PREVIEW ==================== */
+function buildPrintHTML(data){
+  const px = PRINT_PX[data.formatting.textSize];
+  const font = data.formatting.fontFamily;
+  const color = data.formatting.accentColor;
+
+  const sectionHeading = (title) => `<div style="font-weight:700;text-transform:uppercase;font-size:${px.heading}pt;color:${color};border-bottom:1.5px solid ${color};padding-bottom:3px;margin:16px 0 8px;">${esc(title)}</div>`;
+  const bulletLine = (text) => `<div style="margin:0 0 4px 0;padding-left:16px;">&#8226;&nbsp; ${esc(text)}</div>`;
+
+  const PRINT_RENDERERS = {
+    objective: (d) => !d.objective ? '' : sectionHeading(d.headings.objective) + `<div>${esc(d.objective)}</div>`,
+    education: (d) => !d.education.length ? '' : sectionHeading(d.headings.education) + d.education.map(e=>bulletLine([e.degree,e.institution,e.result,e.year].filter(Boolean).join(', '))).join(''),
+    training: (d) => !d.training.length ? '' : sectionHeading(d.headings.training) + d.training.map(t=>bulletLine(t.text)).join(''),
+    skills: (d) => !d.skills.length ? '' : sectionHeading(d.headings.skills) + d.skills.map(s=>bulletLine(s.text)).join(''),
+    experience: (d) => {
+      if(!d.experience.length) return '';
+      let h = sectionHeading(d.headings.experience);
+      d.experience.forEach(w=>{
+        const titleLine = [w.position, w.duration].filter(Boolean).map(esc).join('&nbsp;&nbsp;—&nbsp;&nbsp;');
+        if(titleLine) h += `<div style="font-weight:700;margin-top:6px;">${titleLine}</div>`;
+        const companyLine = [w.company, w.location].filter(Boolean).map(esc).join(', ');
+        if(companyLine) h += `<div style="font-style:italic;margin-bottom:4px;">${companyLine}</div>`;
+        if(w.description) w.description.split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=> h += bulletLine(line));
+      });
+      return h;
+    },
+    languages: (d) => !d.languages.length ? '' : sectionHeading(d.headings.languages) + d.languages.map(l=>bulletLine([l.language,l.proficiency].filter(Boolean).join(' — '))).join(''),
+    itSkills: (d) => !d.itSkills ? '' : sectionHeading(d.headings.itSkills) + d.itSkills.split('\n').map(s=>s.trim()).filter(Boolean).map(bulletLine).join(''),
+    activities: (d) => !d.activities.length ? '' : sectionHeading(d.headings.activities) + d.activities.map(a=>bulletLine(a.text)).join(''),
+    custom: (d) => {
+      let h = '';
+      d.custom.forEach(c=>{
+        if(!c.title && !c.content) return;
+        h += sectionHeading(c.title || 'Additional Information');
+        if(c.format === 'paragraph') h += `<div>${esc(c.content)}</div>`;
+        else (c.content||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=> h += bulletLine(line));
+      });
+      return h;
+    },
+    personalInfo: (d) => {
+      const hasFixed = d.dob || d.nationality || d.marital;
+      if(!hasFixed && !d.extraInfo.length) return '';
+      let h = sectionHeading(d.headings.personalInfo);
+      if(d.dob) h += `<div>Date of Birth: ${esc(formatDate(d.dob))}</div>`;
+      if(d.nationality) h += `<div>Nationality: ${esc(d.nationality)}</div>`;
+      if(d.marital) h += `<div>Marital Status: ${esc(d.marital)}</div>`;
+      d.extraInfo.forEach(f=>{ if(f.label || f.value) h += `<div>${esc([f.label,f.value].filter(Boolean).join(': '))}</div>`; });
+      return h;
+    },
+    references: (d) => {
+      if(d.refUponRequest) return sectionHeading(d.headings.references) + `<div>Available upon request.</div>`;
+      if(!d.references.length) return '';
+      let h = sectionHeading(d.headings.references);
+      d.references.forEach(r=>{
+        if(r.name) h += `<div style="font-weight:700;">${esc(r.name)}</div>`;
+        if(r.designation) h += `<div>${esc(r.designation)}</div>`;
+        if(r.organization) h += `<div>${esc(r.organization)}</div>`;
+        if(r.address) h += `<div>${esc(r.address)}</div>`;
+        if(r.phone) h += `<div>Phone: ${esc(r.phone)}</div>`;
+        if(r.email) h += `<div>Email: ${esc(r.email)}</div>`;
+        h += `<div style="height:8px;"></div>`;
+      });
+      return h;
+    }
+  };
+
+  let h = `<div style="font-family:'${font}',sans-serif;color:#111;max-width:800px;margin:0 auto;padding:32px;font-size:${px.body}pt;line-height:1.5;">`;
+  if(data.photo) h += `<img src="${data.photo}" style="width:92px;height:118px;object-fit:cover;margin-bottom:10px;" alt="">`;
+  if(data.fullName) h += `<div style="font-weight:700;font-size:${px.name}pt;margin-bottom:4px;">${esc(data.fullName)}</div>`;
+  if(data.address) h += `<div>Address: ${esc(data.address)}</div>`;
+  if(data.mobile) h += `<div>Mobile: ${esc(data.mobile)}</div>`;
+  if(data.email) h += `<div style="margin-bottom:6px;">Email: ${esc(data.email)}</div>`;
+
+  const sectionsHtml = data.sectionOrder.map(key => (PRINT_RENDERERS[key] ? PRINT_RENDERERS[key](data) : '')).join('');
+  if(!data.photo && !data.fullName && !data.address && !data.mobile && !data.email && !sectionsHtml.trim()){
+    h += `<div style="color:#999;font-style:italic;">Start filling in the form to see your CV take shape here…</div>`;
+  } else {
+    h += sectionsHtml;
+  }
+
+  if(data.includeSignature && (data.fullName || data.signature)){
+    h += `<div style="margin-top:24px;text-align:right;">`;
+    if(data.signature) h += `<img src="${data.signature}" style="width:130px;height:55px;object-fit:contain;display:inline-block;">`;
+    if(data.fullName) h += `<div>(${esc(data.fullName)})</div>`;
+    h += `</div>`;
+  }
+  h += `</div>`;
+  return h;
+}
+
+/* ==================== live preview wiring ==================== */
+function schedulePreviewUpdate(){
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(renderPreview, 180);
+}
+function renderPreview(){
+  const data = collectData();
+  document.getElementById('livePreview').innerHTML = buildPrintHTML(data);
+}
+const cvForm = document.getElementById('cvForm');
+cvForm.addEventListener('input', schedulePreviewUpdate);
+cvForm.addEventListener('change', schedulePreviewUpdate);
+
+/* seed the default template's order/headings/colour, then render once */
+applyTemplate('fresher');
+renderPreview();
+
+/* ==================== handlers ==================== */
+cvForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const btn = document.getElementById('generateBtn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = 'Building your CV…';
+  status.className = 'status';
+  try{
+    const data = collectData();
+    const blob = await buildDocx(data);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = slugFileName(data.fullName);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 4000);
+    status.textContent = 'Done — your CV was downloaded.';
+    status.className = 'status ok';
+  }catch(err){
+    console.error(err);
+    status.textContent = err && err.message ? err.message : 'Something went wrong generating the file. Please try again.';
+    status.className = 'status err';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('printBtn').addEventListener('click', ()=>{
+  renderPreview();
+  window.print();
+});
+</script>
+</body>
+</html>
