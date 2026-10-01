@@ -813,3 +813,26 @@ input[type=file]{font-size:13px;}
   .icon-btn{min-width:56px;padding:8px 10px;}
   .icon-btn .icon-label{font-size:10px;}
 }
+
+.print-layout-scroll{
+  background:#e8e6e0;
+  padding:16px;
+  overflow:auto;
+  max-height:calc(100vh - 120px);
+}
+.print-page{
+  background:#fff;
+  margin:0 auto;
+  box-shadow:0 2px 12px rgba(0,0,0,.12);
+  /* size set in JS from page + margin settings */
+  box-sizing:border-box;
+  overflow:hidden;
+}
+.print-page #livePreview{
+  max-height:none !important;
+  overflow:visible !important;
+  background:transparent;
+}
+@media (max-width:980px){
+  .print-layout-scroll{max-height:70vh;}
+}

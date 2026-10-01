@@ -17,7 +17,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-<script src="lib/docx.umd.js" defer></script>
 </head>
 <body>
 
@@ -124,8 +123,8 @@
     <div class="fmt-grid" style="margin-top:12px;">
       <div class="field"><label for="bodyAlign">Body text align</label>
         <select id="bodyAlign">
-          <option value="left" selected>Left</option>
-          <option value="justify">Justify</option>
+          <option value="left">Left</option>
+          <option value="justify" selected>Justify (paragraphs)</option>
           <option value="center">Center</option>
         </select></div>
       <div class="field"><label for="bulletStyle">Bullet style</label>
@@ -278,23 +277,15 @@
 
   <div class="submit-bar action-bar">
     <div class="action-group" role="group" aria-label="Export">
-      <button type="submit" class="icon-btn primary-icon" id="generateBtn" title="Download Word (.docx) — opens Save As">
+      <button type="button" class="icon-btn primary-icon" id="generateBtn" title="Save Word (.docx)">
         <span class="icon-glyph" aria-hidden="true">⬇</span>
-        <span class="icon-label">Word</span>
+        <span class="icon-label">Save Word</span>
       </button>
-      <button type="button" class="icon-btn" id="downloadPdfBtn" title="Download PDF — opens print dialog; choose Save as PDF">
-        <span class="icon-glyph" aria-hidden="true">📄</span>
-        <span class="icon-label">PDF</span>
-      </button>
-      <button type="button" class="icon-btn" id="printBtn" title="Print — opens your device print queue">
+      <button type="button" class="icon-btn" id="printBtn" title="Print — device print dialog (Save as PDF if no printer)">
         <span class="icon-glyph" aria-hidden="true">🖨</span>
         <span class="icon-label">Print</span>
       </button>
-      <button type="button" class="icon-btn" id="shareDocxBtn" title="Share — system share sheet, or copy/download if unsupported">
-        <span class="icon-glyph" aria-hidden="true">↗</span>
-        <span class="icon-label">Share</span>
-      </button>
-      <button type="button" class="icon-btn ghost-icon" id="togglePreviewBtn" title="Show or hide live preview">
+      <button type="button" class="icon-btn ghost-icon" id="togglePreviewBtn" title="Show or hide print-layout preview">
         <span class="icon-glyph" aria-hidden="true">👁</span>
         <span class="icon-label">Preview</span>
       </button>
@@ -308,10 +299,14 @@
 <div class="preview-col" id="previewCol">
   <div class="preview-panel">
     <div class="preview-panel-head">
-      <span class="ppt">Preview</span>
+      <span class="ppt">Print layout</span>
       <button type="button" class="ghost-btn" id="closePreviewBtn" title="Hide preview">Hide</button>
     </div>
-    <div id="livePreview"></div>
+    <div class="print-layout-scroll">
+      <div class="print-page" id="printPage">
+        <div id="livePreview"></div>
+      </div>
+    </div>
   </div>
 </div>
 </div>
@@ -338,6 +333,7 @@
   </div>
 </div>
 
+<script src="lib/docx.umd.js"></script>
 <script src="app.js"></script>
 <script>
 if ('serviceWorker' in navigator) {

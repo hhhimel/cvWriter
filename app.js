@@ -1410,7 +1410,7 @@ function collectData(){
       headingBold: document.getElementById('headingBold')?.checked !== false,
       headingUpper: document.getElementById('headingUpper')?.checked !== false,
       headingUnderline: document.getElementById('headingUnderline')?.checked !== false,
-      bodyAlign: document.getElementById('bodyAlign')?.value || 'left',
+      bodyAlign: document.getElementById('bodyAlign')?.value || 'justify',
       headingAlign: document.getElementById('headingAlign')?.value || 'left',
       bulletStyle: document.getElementById('bulletStyle')?.value || 'disc'
     },
@@ -1696,7 +1696,7 @@ function buildTheme(formatting){
     headingBold: formatting.headingBold !== false,
     headingUpper: formatting.headingUpper !== false,
     headingUnderline: formatting.headingUnderline !== false,
-    bodyAlign: formatting.bodyAlign || 'left',
+    bodyAlign: formatting.bodyAlign || 'justify',
     headingAlign: formatting.headingAlign || 'left',
     bulletStyle: formatting.bulletStyle || 'disc'
   };
@@ -1751,7 +1751,7 @@ function bullet(text, opts={}){
   });
 }
 function bodyAlignType(){
-  const a = THEME.bodyAlign || 'left';
+  const a = THEME.bodyAlign || 'justify';
   if(a === 'center') return docx.AlignmentType.CENTER;
   if(a === 'justify') return docx.AlignmentType.BOTH;
   return docx.AlignmentType.LEFT;
@@ -1808,9 +1808,9 @@ const DOCX_SECTION_RENDERERS = {
     push(heading(data.headings.experience));
     data.experience.forEach(w=>{
       const titleLine = [w.position, w.duration].filter(Boolean).join('   —   ');
-      if(titleLine) push(plain(titleLine, { bold: THEME.jobTitleBold, after: Math.round(THEME.para.afterPlain * 0.55) }));
+      if(titleLine) push(plain(titleLine, { bold: THEME.jobTitleBold, after: Math.round(THEME.para.afterPlain * 0.55), align: docx.AlignmentType.LEFT }));
       const companyLine = [w.company, w.location].filter(Boolean).join(', ');
-      if(companyLine) push(plain(companyLine, { italics: THEME.companyItalic, after: THEME.para.afterBody }));
+      if(companyLine) push(plain(companyLine, { italics: THEME.companyItalic, after: THEME.para.afterBody, align: docx.AlignmentType.LEFT }));
       if(w.description) w.description.split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=> push(bullet(line)));
     });
   },
@@ -1869,19 +1869,22 @@ const DOCX_SECTION_RENDERERS = {
 };
 
 async function buildDocx(data){
-  if(typeof docx === 'undefined'){
-    throw new Error('Word library failed to load. Check that lib/docx.umd.js is present, then reload.');
+  const DX = (typeof docx !== 'undefined') ? docx : (typeof window !== 'undefined' ? window.docx : undefined);
+  if(!DX){
+    throw new Error('Word library failed to load. Wait a second and try again, or check lib/docx.umd.js.');
   }
+  // Ensure global name used by helpers
+  if(typeof docx === 'undefined' && DX){ window.docx = DX; }
   THEME = buildTheme(data.formatting);
   const children = [];
   const push = (p) => children.push(p);
 
   // Header: contact left, photo top-right
   const headerParas = [];
-  if(data.fullName) headerParas.push(plain(data.fullName, { bold: THEME.nameBold, size: THEME.sizes.name, after: Math.round(THEME.para.afterPlain * 1.1) }));
-  if(data.address) headerParas.push(plain('Address: ' + data.address, { after:30 }));
-  if(data.mobile) headerParas.push(plain('Mobile: ' + data.mobile, { after:30 }));
-  if(data.email) headerParas.push(plain('Email: ' + data.email, { after:30 }));
+  if(data.fullName) headerParas.push(plain(data.fullName, { bold: THEME.nameBold, size: THEME.sizes.name, after: Math.round(THEME.para.afterPlain * 1.1), align: docx.AlignmentType.LEFT }));
+  if(data.address) headerParas.push(plain('Address: ' + data.address, { after:30, align: docx.AlignmentType.LEFT }));
+  if(data.mobile) headerParas.push(plain('Mobile: ' + data.mobile, { after:30, align: docx.AlignmentType.LEFT }));
+  if(data.email) headerParas.push(plain('Email: ' + data.email, { after:30, align: docx.AlignmentType.LEFT }));
   if(headerParas.length === 0) headerParas.push(new docx.Paragraph({ children: [] }));
 
   if(data.photo){
@@ -1936,6 +1939,7 @@ async function buildDocx(data){
   if(data.includeDeclaration && data.declarationText){
     push(new docx.Paragraph({
       spacing: { before: 240, after: 80 },
+      alignment: bodyAlignType(),
       children: [ new docx.TextRun({
         text: data.declarationText,
         size: THEME.sizes.body,
@@ -2014,7 +2018,8 @@ function buildPrintHTML(data){
     const prefix = bulletChar ? `${bulletChar}&nbsp; ` : '';
     return `<div style="margin:0 0 ${Math.max(2, theme.para.afterBody / 12)}px 0;padding-left:${indentPx}px;${bodyAlignCss}">${prefix}${esc(text)}</div>`;
   };
-  const bodyBlock = (text) => `<div style="${bodyAlignCss}">${esc(text)}</div>`;
+  const bodyBlock = (text) => `<div style="${bodyAlignCss} white-space:pre-wrap;">${esc(text)}</div>`;
+  const bodyParaLine = (htmlInner) => `<div style="${bodyAlignCss}">${htmlInner}</div>`;
 
   const PRINT_RENDERERS = {
     objective: (d) => !d.objective ? '' : sectionHeading(d.headings.objective) + bodyBlock(d.objective),
@@ -2026,9 +2031,9 @@ function buildPrintHTML(data){
       let h = sectionHeading(d.headings.experience);
       d.experience.forEach(w=>{
         const titleLine = [w.position, w.duration].filter(Boolean).map(esc).join('&nbsp;&nbsp;—&nbsp;&nbsp;');
-        if(titleLine) h += `<div style="font-weight:${theme.jobTitleBold ? 700 : 400};margin-top:6px;">${titleLine}</div>`;
+        if(titleLine) h += `<div style="font-weight:${theme.jobTitleBold ? 700 : 400};margin-top:6px;text-align:left;">${titleLine}</div>`;
         const companyLine = [w.company, w.location].filter(Boolean).map(esc).join(', ');
-        if(companyLine) h += `<div style="font-style:${theme.companyItalic ? 'italic' : 'normal'};margin-bottom:4px;">${companyLine}</div>`;
+        if(companyLine) h += `<div style="font-style:${theme.companyItalic ? 'italic' : 'normal'};margin-bottom:4px;text-align:left;">${companyLine}</div>`;
         if(w.description) w.description.split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=> h += bulletLine(line));
       });
       return h;
@@ -2041,7 +2046,7 @@ function buildPrintHTML(data){
       d.custom.forEach(c=>{
         if(!c.title && !c.content) return;
         h += sectionHeading(c.title || 'Additional Information');
-        if(c.format === 'paragraph') h += `<div>${esc(c.content)}</div>`;
+        if(c.format === 'paragraph') h += bodyBlock(c.content);
         else (c.content||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=> h += bulletLine(line));
       });
       return h;
@@ -2095,7 +2100,7 @@ function buildPrintHTML(data){
   } else h += sectionsHtml;
 
   if(data.includeDeclaration && data.declarationText){
-    h += `<div style="margin-top:18px;">${esc(data.declarationText)}</div>`;
+    h += `<div style="margin-top:18px;${bodyAlignCss}">${esc(data.declarationText)}</div>`;
   }
   if(data.includeSignature && (data.fullName || data.signature)){
     h += `<div style="margin-top:14px;text-align:left;">`;
@@ -2115,7 +2120,9 @@ function schedulePreviewUpdate(){
   }, 180);
 }
 function renderPreview(){
-  document.getElementById('livePreview').innerHTML = buildPrintHTML(collectData());
+  const el = document.getElementById('livePreview');
+  if(el) el.innerHTML = buildPrintHTML(collectData());
+  updatePrintPageFrame();
 }
 
 const cvForm = document.getElementById('cvForm');
@@ -2136,114 +2143,38 @@ if(!hadDraft){
 renderPreview();
 updateEmptyCollapse();
 
-cvForm.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  await downloadOrShareDocx({ share: false });
-});
 
-
-/* ========== Clean print window (device print queue / Save as PDF) ========== */
-function openDevicePrint({ preferPdfHint } = {}){
-  renderPreview();
-  const data = collectData();
-  const bodyHtml = buildPrintHTML(data);
-  const w = window.open('', '_blank', 'noopener,noreferrer');
-  if(!w){
-    if(typeof showToast === 'function') showToast('Allow pop-ups for Print / PDF.');
-    return;
-  }
-  const th = buildTheme(data.formatting);
-  const mm = th.marginMm || 25.4;
-  const pageCss = th.pageSizeKey === 'letter' ? 'letter' : 'A4';
-  const title = esc(data.fullName || 'CV');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
-<style>
-  @page { size: ${pageCss}; margin: ${mm}mm; }
-  html, body { margin: 0; padding: 0; background: #fff; }
-  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-</style></head><body>${bodyHtml}</body></html>`);
-  w.document.close();
-  setTimeout(() => {
-    try {
-      w.focus();
-      w.print(); // device print dialog — user can choose printer or "Save as PDF"
-    } catch(e) {}
-  }, 280);
-  const status = document.getElementById('status');
-  if(status){
-    status.textContent = preferPdfHint
-      ? 'Print dialog open — choose “Save as PDF” to download a PDF.'
-      : 'Print dialog open — pick a printer or Save as PDF.';
-    status.className = 'status ok';
-  }
-}
-
-document.getElementById('printBtn')?.addEventListener('click', ()=> openDevicePrint({ preferPdfHint: false }));
-document.getElementById('downloadPdfBtn')?.addEventListener('click', ()=> openDevicePrint({ preferPdfHint: true }));
-
-/* ========== Download Word (Save As) / Share (system sheet) ========== */
-async function buildDocxBlob(){
-  const data = collectData();
-  const blob = await buildDocx(data);
-  return { blob, data, filename: slugFileName(data.fullName) };
-}
-
+/* ========== Save Word (.docx) — reliable click + Save As ========== */
 function triggerSaveAs(blob, filename){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.rel = 'noopener';
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
-async function downloadOrShareDocx({ share }){
-  const btn = document.getElementById(share ? 'shareDocxBtn' : 'generateBtn');
+async function saveWordDocx(){
+  const btn = document.getElementById('generateBtn');
   const status = document.getElementById('status');
   if(btn) btn.disabled = true;
-  if(status){ status.textContent = share ? 'Preparing share…' : 'Building Word file…'; status.className = 'status'; }
+  if(status){ status.textContent = 'Building Word file…'; status.className = 'status'; }
   try{
-    const { blob, data, filename } = await buildDocxBlob();
-    const mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    if(share){
-      const file = new File([blob], filename, { type: mime });
-      // 1) System share sheet with file
-      if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
-        try{
-          await navigator.share({ files: [file], title: (data.fullName || 'CV') + ' — CV', text: 'CV' });
-          if(status){ status.textContent = 'Shared via device.'; status.className = 'status ok'; }
-          return;
-        }catch(e){
-          if(e && e.name === 'AbortError'){
-            if(status){ status.textContent = 'Share cancelled.'; status.className = 'status'; }
-            return;
-          }
-        }
-      }
-      // 2) Fallback: try ClipboardItem file (limited support)
-      try{
-        if(navigator.clipboard && window.ClipboardItem){
-          await navigator.clipboard.write([new ClipboardItem({ [mime]: blob })]);
-          if(status){ status.textContent = 'Copied file to clipboard (if supported).'; status.className = 'status ok'; }
-          if(typeof showToast === 'function') showToast('Copied — paste where supported, or use Download Word.');
-          return;
-        }
-      }catch(e){ /* clipboard file not supported */ }
-      // 3) Final fallback: Save As download
-      triggerSaveAs(blob, filename);
-      if(status){ status.textContent = 'Share unavailable — file downloaded instead.'; status.className = 'status ok'; }
-      if(typeof showToast === 'function') showToast('Opened Save As — share the downloaded file.');
-      return;
+    if(typeof docx === 'undefined' && typeof window.docx === 'undefined'){
+      throw new Error('Word library not loaded yet. Wait a moment and try again.');
     }
-    // Download Word → browser Save As
+    const data = collectData();
+    const blob = await buildDocx(data);
+    const filename = slugFileName(data.fullName);
     triggerSaveAs(blob, filename);
-    if(status){ status.textContent = 'Save As opened for Word (.docx).'; status.className = 'status ok'; }
+    if(status){ status.textContent = 'Save dialog opened (.docx).'; status.className = 'status ok'; }
   }catch(err){
     console.error(err);
     if(status){
-      status.textContent = err && err.message ? err.message : 'Could not build the file.';
+      status.textContent = err && err.message ? err.message : 'Could not build Word file.';
       status.className = 'status err';
     }
   }finally{
@@ -2251,7 +2182,125 @@ async function downloadOrShareDocx({ share }){
   }
 }
 
-document.getElementById('shareDocxBtn')?.addEventListener('click', ()=> downloadOrShareDocx({ share: true }));
+document.getElementById('generateBtn')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  saveWordDocx();
+});
+// Keep form submit from doing a full page reload
+document.getElementById('cvForm')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  saveWordDocx();
+});
+
+/* ========== Print via hidden iframe (no pop-up blocker) ==========
+   Opens the device print dialog. If no printer is available, the OS
+   typically still offers “Save as PDF” / “Microsoft Print to PDF”. */
+function openDevicePrint(){
+  const status = document.getElementById('status');
+  try{
+    renderPreview();
+    const data = collectData();
+    const bodyHtml = buildPrintHTML(data);
+    const th = buildTheme(data.formatting);
+    const mm = th.marginMm || 25.4;
+    const pageCss = th.pageSizeKey === 'letter' ? 'letter' : 'A4';
+    const title = esc(data.fullName || 'CV');
+
+    let iframe = document.getElementById('printFrame');
+    if(!iframe){
+      iframe = document.createElement('iframe');
+      iframe.id = 'printFrame';
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none;';
+      document.body.appendChild(iframe);
+    }
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
+<style>
+  @page { size: ${pageCss}; margin: ${mm}mm; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+</style></head><body>${bodyHtml}</body></html>`);
+    doc.close();
+
+    const win = iframe.contentWindow;
+    const doPrint = () => {
+      try{
+        win.focus();
+        win.print();
+        if(status){
+          status.textContent = 'Print dialog open — choose a printer or Save as PDF.';
+          status.className = 'status ok';
+        }
+      }catch(err){
+        console.error(err);
+        if(status){
+          status.textContent = 'Could not open print dialog. Try again or use Save Word.';
+          status.className = 'status err';
+        }
+      }
+    };
+    // Wait for images in CV to load
+    const imgs = Array.from(doc.images || []);
+    if(imgs.length){
+      let left = imgs.length;
+      const done = () => { left -= 1; if(left <= 0) setTimeout(doPrint, 100); };
+      imgs.forEach(img => {
+        if(img.complete) done();
+        else { img.onload = done; img.onerror = done; }
+      });
+      setTimeout(doPrint, 1500); // safety
+    } else {
+      setTimeout(doPrint, 200);
+    }
+  }catch(err){
+    console.error(err);
+    if(status){
+      status.textContent = err && err.message ? err.message : 'Print failed.';
+      status.className = 'status err';
+    }
+  }
+}
+
+document.getElementById('printBtn')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  openDevicePrint();
+});
+
+/* ========== Print-layout preview (page size + margins) ========== */
+function updatePrintPageFrame(){
+  const pageEl = document.getElementById('printPage');
+  if(!pageEl) return;
+  const data = collectData();
+  const th = buildTheme(data.formatting);
+  // CSS mm for visual page (scaled to fit sidebar ~420px wide)
+  const pageWmm = th.pageSizeKey === 'letter' ? 215.9 : 210;
+  const pageHmm = th.pageSizeKey === 'letter' ? 279.4 : 297;
+  const marginMm = th.marginMm || 25.4;
+  pageEl.style.width = pageWmm + 'mm';
+  pageEl.style.minHeight = pageHmm + 'mm';
+  pageEl.style.padding = marginMm + 'mm';
+  pageEl.style.maxWidth = '100%';
+  // Scale down if wider than container
+  const scroll = pageEl.parentElement;
+  if(scroll){
+    const avail = scroll.clientWidth - 32;
+    // 1mm ≈ 3.78px at 96dpi
+    const natural = pageWmm * 3.78;
+    if(avail > 40 && natural > avail){
+      const scale = avail / natural;
+      pageEl.style.transform = 'scale(' + scale.toFixed(4) + ')';
+      pageEl.style.transformOrigin = 'top center';
+      // compensate height so scroll area is correct
+      pageEl.style.marginBottom = ((pageHmm * 3.78 * (scale - 1)) ) + 'px';
+    } else {
+      pageEl.style.transform = '';
+      pageEl.style.marginBottom = '';
+    }
+  }
+}
+
 
 /* Mobile / optional preview */
 (function wirePreviewToggle(){
