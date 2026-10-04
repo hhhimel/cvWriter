@@ -1,7 +1,7 @@
 {
   "name": "CV Builder",
   "short_name": "CV Builder",
-  "description": "Build your CV offline — live preview, Word download, all local.",
+  "description": "Build your CV offline \u2014 live preview, Word download, print to PDF. All local.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -28,5 +28,10 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "categories": [
+    "productivity",
+    "business"
+  ],
+  "id": "./"
 }

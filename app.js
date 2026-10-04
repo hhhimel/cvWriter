@@ -1,6 +1,22 @@
 /* CV Builder — app.js
    All logic runs client-side. Drafts in localStorage. DOCX via self-hosted lib. */
 
+
+/* ---- Lazy-load the Word library (740 KB) so first paint is fast ---- */
+window.loadDocxLib = function(){
+  if(typeof window.docx !== 'undefined') return Promise.resolve();
+  if(!window.__docxP){
+    window.__docxP = new Promise((resolve, reject)=>{
+      const sc = document.createElement('script');
+      sc.src = 'lib/docx.umd.js';
+      sc.onload = () => resolve();
+      sc.onerror = () => { window.__docxP = null; reject(new Error('Could not load the Word library. Check your connection and try again.')); };
+      document.head.appendChild(sc);
+    });
+  }
+  return window.__docxP;
+};
+
 let previewTimer = null;
 const DRAFT_KEY = 'cvbuilder_draft_v1';
 const DRAFT_SAVE_MS = 800;
@@ -902,6 +918,8 @@ function wireImageControl({ prefix, fileInputId, previewId, onResult, cropBtnId 
     if(cropBtn) cropBtn.disabled = !has;
     const xBtn = document.getElementById(prefix + 'RemoveBtn');
     const editBtn = document.getElementById(prefix + 'CropBtn');
+    const under = document.getElementById(prefix === 'photo' ? 'photoUnderActions' : (prefix === 'sig' ? 'sigUnderActions' : null));
+    if(under) under.hidden = !has;
     if(xBtn) xBtn.hidden = !has;
     if(editBtn){ editBtn.hidden = !has; editBtn.disabled = !has; }
   }
@@ -999,6 +1017,8 @@ const photoCtrl = wireImageControl({
     photoDataUrl = url;
     const xBtn = document.getElementById('photoRemoveBtn');
     const editBtn = document.getElementById('photoCropBtn');
+    const under = document.getElementById('photoUnderActions');
+    if(under) under.hidden = !url;
     if(xBtn) xBtn.hidden = !url;
     if(editBtn){ editBtn.hidden = !url; editBtn.disabled = !url; }
     schedulePreviewUpdate();
@@ -1016,6 +1036,8 @@ const sigCtrl = wireImageControl({
   onResult:(url)=>{
     signatureDataUrl = url;
     const xBtn = document.getElementById('sigRemoveBtn');
+    const under = document.getElementById('sigUnderActions');
+    if(under) under.hidden = !url;
     if(xBtn) xBtn.hidden = !url;
     schedulePreviewUpdate();
     scheduleDraftSave();
@@ -1571,10 +1593,13 @@ function scheduleDraftSave(){
 }
 function saveDraft(){
   try{
-    const data = collectData();
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    const json = JSON.stringify(collectData());
+    if(json !== saveDraft._last){
+      localStorage.setItem(DRAFT_KEY, json);
+      saveDraft._last = json;
+    }
     const el = document.getElementById('draftStatus');
-    if(el) el.innerHTML = 'Draft saved <strong>locally</strong> · ' + new Date().toLocaleTimeString();
+    if(el) el.innerHTML = 'Saved <strong>on this device</strong> · ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   }catch(e){
     console.warn('Draft save failed', e);
   }
@@ -2115,14 +2140,22 @@ function buildPrintHTML(data){
 function schedulePreviewUpdate(){
   clearTimeout(previewTimer);
   previewTimer = setTimeout(()=>{
-    renderPreview();
-    updateEmptyCollapse();
-  }, 180);
+    requestAnimationFrame(()=>{
+      renderPreview();
+      updateEmptyCollapse();
+    });
+  }, 120);
 }
+let lastPreviewHtml = '';
 function renderPreview(){
   const el = document.getElementById('livePreview');
-  if(el) el.innerHTML = buildPrintHTML(collectData());
-  updatePrintPageFrame();
+  const data = collectData();
+  if(el){
+    const html = buildPrintHTML(data);
+    if(html !== lastPreviewHtml){ el.innerHTML = html; lastPreviewHtml = html; }
+  }
+  updatePrintPageFrame(data);
+  document.dispatchEvent(new CustomEvent('cv:render', { detail: { data } }));
 }
 
 const cvForm = document.getElementById('cvForm');
@@ -2145,16 +2178,44 @@ updateEmptyCollapse();
 
 
 /* ========== Save Word (.docx) — reliable click + Save As ========== */
-function triggerSaveAs(blob, filename){
+/** Desktop: File System Access API (real Save As). Mobile / others: download link (share sheet / Downloads). */
+async function triggerSaveAs(blob, filename){
+  const mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  // Chromium desktop — native file explorer Save As
+  if(typeof window.showSaveFilePicker === 'function'){
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: 'Word document',
+          accept: { [mime]: ['.docx'] }
+        }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return 'picker';
+    }catch(err){
+      // User cancelled
+      if(err && (err.name === 'AbortError' || err.name === 'NotAllowedError')){
+        return 'cancelled';
+      }
+      // Fall through to download fallback
+      console.warn('showSaveFilePicker failed, using download', err);
+    }
+  }
+  // Phones & browsers without the picker — <a download> triggers system save/share
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   a.rel = 'noopener';
+  a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  setTimeout(() => URL.revokeObjectURL(url), 8000);
+  return 'download';
 }
 
 async function saveWordDocx(){
@@ -2163,14 +2224,23 @@ async function saveWordDocx(){
   if(btn) btn.disabled = true;
   if(status){ status.textContent = 'Building Word file…'; status.className = 'status'; }
   try{
-    if(typeof docx === 'undefined' && typeof window.docx === 'undefined'){
-      throw new Error('Word library not loaded yet. Wait a moment and try again.');
-    }
+    await window.loadDocxLib();
     const data = collectData();
     const blob = await buildDocx(data);
     const filename = slugFileName(data.fullName);
-    triggerSaveAs(blob, filename);
-    if(status){ status.textContent = 'Save dialog opened (.docx).'; status.className = 'status ok'; }
+    const mode = await triggerSaveAs(blob, filename);
+    if(status){
+      if(mode === 'cancelled'){
+        status.textContent = 'Save cancelled.';
+        status.className = 'status';
+      } else if(mode === 'picker'){
+        status.textContent = 'Saved via file explorer.';
+        status.className = 'status ok';
+      } else {
+        status.textContent = 'Download started — check Downloads or the system share sheet.';
+        status.className = 'status ok';
+      }
+    }
   }catch(err){
     console.error(err);
     if(status){
@@ -2269,37 +2339,45 @@ document.getElementById('printBtn')?.addEventListener('click', (e) => {
 });
 
 /* ========== Print-layout preview (page size + margins) ========== */
-function updatePrintPageFrame(){
+window.cvZoom = 'fit';
+function updatePrintPageFrame(data){
   const pageEl = document.getElementById('printPage');
-  if(!pageEl) return;
-  const data = collectData();
+  const stage = document.getElementById('printStage');
+  if(!pageEl || !stage) return;
+  data = data || collectData();
   const th = buildTheme(data.formatting);
-  // CSS mm for visual page (scaled to fit sidebar ~420px wide)
-  const pageWmm = th.pageSizeKey === 'letter' ? 215.9 : 210;
-  const pageHmm = th.pageSizeKey === 'letter' ? 279.4 : 297;
+  const letter = th.pageSizeKey === 'letter';
+  const wmm = letter ? 215.9 : 210;
+  const hmm = letter ? 279.4 : 297;
   const marginMm = th.marginMm || 25.4;
-  pageEl.style.width = pageWmm + 'mm';
-  pageEl.style.minHeight = pageHmm + 'mm';
+  const PX = 96 / 25.4;
+  pageEl.style.width = wmm + 'mm';
+  pageEl.style.minHeight = hmm + 'mm';
   pageEl.style.padding = marginMm + 'mm';
-  pageEl.style.maxWidth = '100%';
-  // Scale down if wider than container
-  const scroll = pageEl.parentElement;
-  if(scroll){
-    const avail = scroll.clientWidth - 32;
-    // 1mm ≈ 3.78px at 96dpi
-    const natural = pageWmm * 3.78;
-    if(avail > 40 && natural > avail){
-      const scale = avail / natural;
-      pageEl.style.transform = 'scale(' + scale.toFixed(4) + ')';
-      pageEl.style.transformOrigin = 'top center';
-      // compensate height so scroll area is correct
-      pageEl.style.marginBottom = ((pageHmm * 3.78 * (scale - 1)) ) + 'px';
-    } else {
-      pageEl.style.transform = '';
-      pageEl.style.marginBottom = '';
-    }
+  pageEl.style.setProperty('--page-h', hmm + 'mm');
+  pageEl.style.setProperty('--margin', marginMm + 'mm');
+  const scroll = pageEl.closest('.print-layout-scroll');
+  const naturalW = wmm * PX;
+  const avail = Math.max(160, (scroll ? scroll.clientWidth : naturalW) - 32);
+  const fit = Math.min(1, avail / naturalW);
+  const scale = window.cvZoom === 'fit' ? fit : Math.max(0.3, Math.min(2, window.cvZoom));
+  pageEl.style.transformOrigin = 'top left';
+  pageEl.style.transform = 'scale(' + scale.toFixed(4) + ')';
+  stage.style.width = (naturalW * scale) + 'px';
+  stage.style.height = (pageEl.offsetHeight * scale) + 'px';
+  // page geometry for page-count + break guides (used by enhance.js)
+  const live = document.getElementById('livePreview');
+  const contentH = live ? live.offsetHeight : 0;
+  const pageContentPx = (hmm - 2 * marginMm) * PX;
+  window.cvPageInfo = { scale, fit, pages: contentH / pageContentPx, pageContentPx, contentH, marginPx: marginMm * PX };
+  const g = document.getElementById('pageGuides');
+  if(g){
+    g.style.top = (marginMm * PX) + 'px';
+    g.style.height = contentH + 'px';
+    g.style.setProperty('--period', pageContentPx + 'px');
   }
 }
+
 
 
 /* Mobile / optional preview */

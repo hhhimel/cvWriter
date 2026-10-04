@@ -15,6 +15,17 @@ After you open the site over **HTTPS** (GitHub Pages) or `localhost`:
 
 Once installed it opens full-screen (standalone), works offline for the UI shell, and keeps drafts in this device’s browser storage.
 
+## New in v2
+
+- **CV health** score with fix-it links (email, length, action verbs, measurable results, page count)
+- **Section jump bar** + progress line in a sticky header
+- **Undo / redo** (Alt+Z / Alt+Shift+Z), **My CVs** (several saved versions + auto-backup)
+- **Dark mode**, accent colour presets, preview zoom, page-break guides, live page count
+- **Copy as plain text** for online application forms
+- Shortcuts: Ctrl/⌘+S save Word, Ctrl/⌘+P print
+- Faster: Word library loads on demand, preview skips unchanged renders, stale-while-revalidate offline cache
+- Mobile preview opens as a full-screen sheet
+
 ## What’s included
 
 - Inline section headings (✎ or double-click)
@@ -56,7 +67,7 @@ Open the printed URL (prefer a local server over `file://`).
 
 ```bash
 git init
-git add index.html styles.css app.js sw.js manifest.webmanifest \
+git add index.html styles.css app.js enhance.js sw.js manifest.webmanifest \
   lib/ icons/ README.md .gitignore
 git commit -m "CV Builder PWA"
 git branch -M main
@@ -76,6 +87,7 @@ PWA install requires HTTPS (Pages provides that).
 ├── index.html
 ├── styles.css
 ├── app.js
+├── enhance.js            # v2 features
 ├── sw.js                 # service worker
 ├── manifest.webmanifest
 ├── icons/                # 192, 512, apple-touch, favicon
